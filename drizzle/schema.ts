@@ -36,11 +36,12 @@ export const orders = mysqlTable("orders", {
   orderDate: timestamp("orderDate").notNull(),
   deliveryDate: timestamp("deliveryDate"),
   status: mysqlEnum("status", ["pending", "confirmed", "processing", "completed", "exception"]).default("pending").notNull(),
-  sourceEmailId: varchar("sourceEmailId", { length: 200 }),
-  aiConfidence: int("aiConfidence"), // 0-100
+  sourceEmailId: varchar("source_email_id", { length: 255 }),
+  aiConfidence: int("ai_confidence"),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  attachmentUrls: text("attachment_urls"), // JSON格式存储附件URL数组
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Order = typeof orders.$inferSelect;

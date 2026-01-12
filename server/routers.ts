@@ -234,6 +234,53 @@ export const appRouter = router({
         return await getOrderHistory(input.orderId);
       }),
   }),
+
+  // 批量操作
+  batchOperations: router({
+    confirmOrders: protectedProcedure
+      .input(z.object({ orderIds: z.array(z.number()) }))
+      .mutation(async ({ input, ctx }) => {
+        const { batchConfirmOrders } = await import("./db");
+        await batchConfirmOrders(
+          input.orderIds,
+          ctx.user.id,
+          ctx.user.name || "匿名用户"
+        );
+        return { success: true, count: input.orderIds.length };
+      }),
+
+    exportOrders: protectedProcedure
+      .input(
+        z.object({
+          orderIds: z.array(z.number()).optional(),
+          status: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        const { getOrders } = await import("./db");
+        const orders = await getOrders({
+          status: input.status,
+          limit: 1000,
+        });
+        // 返回JSON数据，前端负责转换为Excel
+        return orders;
+      }),
+  }),
+
+  // AI统计
+  aiStats: router({
+    accuracy: publicProcedure.query(async () => {
+      const { getAIAccuracyStats } = await import("./db");
+      return await getAIAccuracyStats();
+    }),
+
+    trend: publicProcedure
+      .input(z.object({ days: z.number().optional() }))
+      .query(async ({ input }) => {
+        const { getAIAccuracyTrend } = await import("./db");
+        return await getAIAccuracyTrend(input.days || 7);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

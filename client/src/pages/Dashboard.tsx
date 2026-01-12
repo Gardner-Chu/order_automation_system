@@ -9,12 +9,16 @@ import {
   CheckCircle,
   Activity,
   RefreshCw,
+  TrendingUp,
 } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 
 export default function Dashboard() {
   const { data: stats, isLoading, refetch } = trpc.dashboard.stats.useQuery();
   const { data: emailStatus } = trpc.email.status.useQuery();
+  const { data: aiAccuracy } = trpc.aiStats.accuracy.useQuery();
+  const { data: aiTrend } = trpc.aiStats.trend.useQuery({ days: 7 });
   const startEmailMutation = trpc.email.start.useMutation();
   const stopEmailMutation = trpc.email.stop.useMutation();
   const syncMutation = trpc.email.sync.useMutation();
@@ -235,7 +239,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* 处理统计 */}
+        {/*         {/* 处理统计 */}
         <Card>
           <CardHeader>
             <CardTitle>处理统计</CardTitle>
@@ -243,9 +247,7 @@ export default function Dashboard() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex flex-col">
-                <span className="text-sm text-muted-foreground">
-                  总处理数
-                </span>
+                <span className="text-sm text-muted-foreground">总处理数</span>
                 <span className="text-3xl font-bold mt-2">
                   {stats?.totalProcessed || 0}
                 </span>
@@ -283,6 +285,99 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* AI识别准确率统计 */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                AI识别准确率
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">总订单数</span>
+                  <span className="text-2xl font-bold">
+                    {aiAccuracy?.totalOrders || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    高置信度 (≥80%)
+                  </span>
+                  <span className="text-2xl font-bold text-green-600">
+                    {aiAccuracy?.highConfidence || 0}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    低置信度 (&lt;80%)
+                  </span>
+                  <span className="text-2xl font-bold text-yellow-600">
+                    {aiAccuracy?.lowConfidence || 0}
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">准确率</span>
+                    <span className="text-sm font-medium">
+                      {aiAccuracy?.accuracyRate || 0}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all"
+                      style={{ width: `${aiAccuracy?.accuracyRate || 0}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>AI准确率趋势（近7天）</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {aiTrend && aiTrend.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <LineChart data={aiTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                      tickFormatter={(value) => {
+                        const date = new Date(value);
+                        return `${date.getMonth() + 1}/${date.getDate()}`;
+                      }}
+                    />
+                    <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
+                    <Tooltip
+                      formatter={(value: number) => `${value}%`}
+                      labelFormatter={(label) => `日期: ${label}`}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="accuracyRate"
+                      name="准确率"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                  暂无趋势数据
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

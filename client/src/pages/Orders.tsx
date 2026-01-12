@@ -19,7 +19,9 @@ import {
 } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
-import { RefreshCw, Eye } from "lucide-react";
+import { RefreshCw, Eye, CheckSquare, Download, CheckCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 const statusColors = {
@@ -41,11 +43,64 @@ const statusLabels = {
 export default function Orders() {
   const [, setLocation] = useLocation();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedOrders, setSelectedOrders] = useState<number[]>([]);
   const { data: orders, isLoading, refetch } = trpc.orders.list.useQuery({
     status: statusFilter === "all" ? undefined : statusFilter,
     limit: 50,
     offset: 0,
   });
+
+  const batchConfirmMutation = trpc.batchOperations.confirmOrders.useMutation({
+    onSuccess: (data) => {
+      toast.success(`已批量确认 ${data.count} 个订单`);
+      setSelectedOrders([]);
+      refetch();
+    },
+    onError: () => {
+      toast.error("批量确认失败");
+    },
+  });
+
+  const handleSelectAll = () => {
+    if (selectedOrders.length === orders?.length) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(orders?.map(o => o.id) || []);
+    }
+  };
+
+  const handleSelectOrder = (orderId: number) => {
+    setSelectedOrders(prev =>
+      prev.includes(orderId)
+        ? prev.filter(id => id !== orderId)
+        : [...prev, orderId]
+    );
+  };
+
+  const handleBatchConfirm = () => {
+    if (selectedOrders.length === 0) {
+      toast.error("请选择要确认的订单");
+      return;
+    }
+    if (confirm(`确定要批量确认 ${selectedOrders.length} 个订单吗？`)) {
+      batchConfirmMutation.mutate({ orderIds: selectedOrders });
+    }
+  };
+
+  const handleExport = async () => {
+    toast.info("正在导出数据...");
+    // 这里可以调用导出API，然后转换为Excel
+    // 简化处理：直接下载JSON
+    const dataStr = JSON.stringify(orders, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orders_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("导出成功");
+  };
 
   return (
     <DashboardLayout>
@@ -67,19 +122,42 @@ export default function Orders() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>订单列表</CardTitle>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="筛选状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="pending">待处理</SelectItem>
-                  <SelectItem value="confirmed">已确认</SelectItem>
-                  <SelectItem value="processing">处理中</SelectItem>
-                  <SelectItem value="completed">已完成</SelectItem>
-                  <SelectItem value="exception">异常</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center gap-2">
+                {selectedOrders.length > 0 && (
+                  <>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleBatchConfirm}
+                      disabled={batchConfirmMutation.isPending}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      批量确认 ({selectedOrders.length})
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleExport}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      导出
+                    </Button>
+                  </>
+                )}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="筛选状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="pending">待处理</SelectItem>
+                    <SelectItem value="confirmed">已确认</SelectItem>
+                    <SelectItem value="processing">处理中</SelectItem>
+                    <SelectItem value="completed">已完成</SelectItem>
+                    <SelectItem value="exception">异常</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -92,6 +170,12 @@ export default function Orders() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedOrders.length === orders?.length && orders.length > 0}
+                          onCheckedChange={handleSelectAll}
+                        />
+                      </TableHead>
                       <TableHead>订单号</TableHead>
                       <TableHead>客户名称</TableHead>
                       <TableHead>订单日期</TableHead>
@@ -104,6 +188,12 @@ export default function Orders() {
                   <TableBody>
                     {orders.map((order) => (
                       <TableRow key={order.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedOrders.includes(order.id)}
+                            onCheckedChange={() => handleSelectOrder(order.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           {order.orderNumber}
                         </TableCell>

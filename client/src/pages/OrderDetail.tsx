@@ -13,6 +13,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, CheckCircle, XCircle, RefreshCw, MessageSquare, Clock, Send, Trash2 } from "lucide-react";
+import AttachmentPreview from "@/components/AttachmentPreview";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -413,6 +414,9 @@ export default function OrderDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 邮件附件预览 */}
+        <AttachmentPreview attachmentUrls={order.attachmentUrls} />
 
         {/* 修改历史 */}
         <Card>

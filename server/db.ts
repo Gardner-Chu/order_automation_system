@@ -438,3 +438,73 @@ export async function getOrderHistory(orderId: number) {
     .where(eq(orderHistory.orderId, orderId))
     .orderBy(desc(orderHistory.createdAt));
 }
+
+// 批量确认订单
+export async function batchConfirmOrders(orderIds: number[], userId: number, userName: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  for (const orderId of orderIds) {
+    await updateOrderStatus(orderId, "confirmed", "批量确认");
+    await createOrderHistory({
+      orderId,
+      userId,
+      userName,
+      action: "confirmed",
+      fieldName: "status",
+      oldValue: null,
+      newValue: "confirmed",
+    });
+  }
+}
+
+// 获取AI识别准确率统计
+export async function getAIAccuracyStats() {
+  const db = await getDb();
+  if (!db) return { totalOrders: 0, highConfidence: 0, lowConfidence: 0, accuracyRate: 0 };
+
+  const allOrders = await db.select().from(orders);
+  const totalOrders = allOrders.length;
+  const highConfidence = allOrders.filter(o => (o.aiConfidence || 0) >= 80).length;
+  const lowConfidence = allOrders.filter(o => (o.aiConfidence || 0) < 80).length;
+  const accuracyRate = totalOrders > 0 ? Math.round((highConfidence / totalOrders) * 100) : 0;
+
+  return {
+    totalOrders,
+    highConfidence,
+    lowConfidence,
+    accuracyRate,
+  };
+}
+
+// 获取AI识别准确率趋势（按天）
+export async function getAIAccuracyTrend(days: number = 7) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const allOrders = await db.select().from(orders);
+  const recentOrders = allOrders.filter(o => o.createdAt >= startDate);
+
+  // 按天分组统计
+  const trendMap = new Map<string, { date: string; total: number; highConfidence: number }>();
+
+  for (const order of recentOrders) {
+    const dateKey = order.createdAt.toISOString().split('T')[0];
+    if (!trendMap.has(dateKey)) {
+      trendMap.set(dateKey, { date: dateKey, total: 0, highConfidence: 0 });
+    }
+    const stats = trendMap.get(dateKey)!;
+    stats.total++;
+    if ((order.aiConfidence || 0) >= 80) {
+      stats.highConfidence++;
+    }
+  }
+
+  return Array.from(trendMap.values()).map(stat => ({
+    ...stat,
+    accuracyRate: stat.total > 0 ? Math.round((stat.highConfidence / stat.total) * 100) : 0,
+  })).sort((a, b) => a.date.localeCompare(b.date));
+}
