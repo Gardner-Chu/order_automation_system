@@ -84,6 +84,39 @@ export type ProcessingLog = typeof processingLog.$inferSelect;
 export type InsertProcessingLog = typeof processingLog.$inferInsert;
 
 /**
+ * 订单批注表 - 记录运营人员的审核意见
+ */
+export const orderComments = mysqlTable("order_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("order_id").notNull(),
+  userId: int("user_id").notNull(),
+  userName: text("user_name").notNull(),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type OrderComment = typeof orderComments.$inferSelect;
+export type InsertOrderComment = typeof orderComments.$inferInsert;
+
+/**
+ * 订单修改历史表 - 追踪订单字段的修改记录
+ */
+export const orderHistory = mysqlTable("order_history", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("order_id").notNull(),
+  userId: int("user_id").notNull(),
+  userName: text("user_name").notNull(),
+  action: mysqlEnum("action", ["created", "updated", "confirmed", "rejected"]).notNull(),
+  fieldName: varchar("field_name", { length: 100 }),
+  oldValue: text("old_value"),
+  newValue: text("new_value"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export type OrderHistory = typeof orderHistory.$inferSelect;
+export type InsertOrderHistory = typeof orderHistory.$inferInsert;
+
+/**
  * 邮箱配置表 - 存储IMAP配置和字段映射规则
  */
 export const emailConfig = mysqlTable("emailConfig", {

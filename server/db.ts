@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { 
   InsertUser, 
@@ -10,7 +10,11 @@ import {
   InsertOrder,
   InsertOrderItem,
   InsertProcessingLog,
-  InsertEmailConfig
+  InsertEmailConfig,
+  orderComments,
+  InsertOrderComment,
+  orderHistory,
+  InsertOrderHistory
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -359,4 +363,78 @@ export async function updateEmailConfigLastSync(configId: number) {
     .update(emailConfig)
     .set({ lastSyncAt: new Date() })
     .where(eq(emailConfig.id, configId));
+}
+
+/**
+ * 创建订单批注
+ */
+export async function createOrderComment(
+  comment: InsertOrderComment
+): Promise<number> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  const result = await db.insert(orderComments).values(comment);
+  return result[0].insertId;
+}
+
+/**
+ * 获取订单的所有批注
+ */
+export async function getOrderComments(orderId: number) {
+  const db = await getDb();
+  if (!db) {
+    return [];
+  }
+
+  return await db
+    .select()
+    .from(orderComments)
+    .where(eq(orderComments.orderId, orderId))
+    .orderBy(desc(orderComments.createdAt));
+}
+
+/**
+ * 删除订单批注
+ */
+export async function deleteOrderComment(commentId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  await db.delete(orderComments).where(eq(orderComments.id, commentId));
+}
+
+/**
+ * 创建订单修改历史记录
+ */
+export async function createOrderHistory(
+  history: InsertOrderHistory
+): Promise<number> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  const result = await db.insert(orderHistory).values(history);
+  return result[0].insertId;
+}
+
+/**
+ * 获取订单的修改历史
+ */
+export async function getOrderHistory(orderId: number) {
+  const db = await getDb();
+  if (!db) {
+    return [];
+  }
+
+  return await db
+    .select()
+    .from(orderHistory)
+    .where(eq(orderHistory.orderId, orderId))
+    .orderBy(desc(orderHistory.createdAt));
 }

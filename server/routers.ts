@@ -176,6 +176,64 @@ export const appRouter = router({
       return { success: true, message: "模拟数据已生成" };
     }),
   }),
+
+  // 订单批注
+  orderComment: router({
+    create: protectedProcedure
+      .input(
+        z.object({
+          orderId: z.number(),
+          comment: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const { createOrderComment, createOrderHistory } = await import("./db");
+        const commentId = await createOrderComment({
+          orderId: input.orderId,
+          userId: ctx.user.id,
+          userName: ctx.user.name || "匿名用户",
+          comment: input.comment,
+        });
+
+        // 记录历史
+        await createOrderHistory({
+          orderId: input.orderId,
+          userId: ctx.user.id,
+          userName: ctx.user.name || "匿名用户",
+          action: "updated",
+          fieldName: "comment",
+          oldValue: null,
+          newValue: input.comment,
+        });
+
+        return { commentId };
+      }),
+
+    list: publicProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        const { getOrderComments } = await import("./db");
+        return await getOrderComments(input.orderId);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ commentId: z.number() }))
+      .mutation(async ({ input }) => {
+        const { deleteOrderComment } = await import("./db");
+        await deleteOrderComment(input.commentId);
+        return { success: true };
+      }),
+  }),
+
+  // 订单修改历史
+  orderHistory: router({
+    list: publicProcedure
+      .input(z.object({ orderId: z.number() }))
+      .query(async ({ input }) => {
+        const { getOrderHistory } = await import("./db");
+        return await getOrderHistory(input.orderId);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

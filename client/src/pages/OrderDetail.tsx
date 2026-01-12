@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, RefreshCw, MessageSquare, Clock, Send, Trash2 } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -38,11 +38,43 @@ export default function OrderDetail() {
   const [, setLocation] = useLocation();
   const orderId = params?.id ? parseInt(params.id) : 0;
   const [notes, setNotes] = useState("");
+  const [newComment, setNewComment] = useState("");
 
   const { data: orderData, isLoading, refetch } = trpc.orders.getById.useQuery(
     { id: orderId },
     { enabled: orderId > 0 }
   );
+
+  const { data: comments = [], refetch: refetchComments } = trpc.orderComment.list.useQuery(
+    { orderId },
+    { enabled: orderId > 0 }
+  );
+
+  const { data: history = [] } = trpc.orderHistory.list.useQuery(
+    { orderId },
+    { enabled: orderId > 0 }
+  );
+
+  const createCommentMutation = trpc.orderComment.create.useMutation({
+    onSuccess: () => {
+      toast.success("批注已添加");
+      setNewComment("");
+      refetchComments();
+    },
+    onError: () => {
+      toast.error("添加批注失败");
+    },
+  });
+
+  const deleteCommentMutation = trpc.orderComment.delete.useMutation({
+    onSuccess: () => {
+      toast.success("批注已删除");
+      refetchComments();
+    },
+    onError: () => {
+      toast.error("删除批注失败");
+    },
+  });
 
   const updateStatusMutation = trpc.orders.updateStatus.useMutation({
     onSuccess: () => {
@@ -62,12 +94,29 @@ export default function OrderDetail() {
     });
   };
 
-  const handleReject = async () => {
-    await updateStatusMutation.mutateAsync({
+  const handleReject = () => {
+    updateStatusMutation.mutate({
       id: orderId,
-      status: "exception",
+      status: "rejected",
       notes: notes || "订单被拒绝",
     });
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.trim()) {
+      toast.error("请输入批注内容");
+      return;
+    }
+    createCommentMutation.mutate({
+      orderId,
+      comment: newComment,
+    });
+  };
+
+  const handleDeleteComment = (commentId: number) => {
+    if (confirm("确定要删除这条批注吗？")) {
+      deleteCommentMutation.mutate({ commentId });
+    }
   };
 
   if (isLoading) {
@@ -297,6 +346,134 @@ export default function OrderDetail() {
             </CardContent>
           </Card>
         )}
+
+        {/* 批注区域 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              订单批注
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* 批注列表 */}
+            <div className="space-y-3">
+              {comments.length > 0 ? (
+                comments.map((comment) => (
+                  <div
+                    key={comment.id}
+                    className="p-4 bg-muted rounded-lg space-y-2"
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">
+                            {comment.userName}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(comment.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-sm mt-2">{comment.comment}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-muted-foreground text-center py-4">
+                  暂无批注
+                </p>
+              )}
+            </div>
+
+            {/* 添加批注 */}
+            <div className="space-y-2">
+              <Textarea
+                placeholder="添加审核意见或批注..."
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                rows={3}
+              />
+              <Button
+                onClick={handleAddComment}
+                disabled={createCommentMutation.isPending || !newComment.trim()}
+                className="w-full"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                添加批注
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 修改历史 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              修改历史
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {history.length > 0 ? (
+              <div className="space-y-4">
+                {history.map((record, index) => (
+                  <div key={record.id} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-primary" />
+                      {index < history.length - 1 && (
+                        <div className="w-0.5 h-full bg-border mt-2" />
+                      )}
+                    </div>
+                    <div className="flex-1 pb-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">
+                          {record.userName}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {record.action === "created" && "创建"}
+                          {record.action === "updated" && "修改"}
+                          {record.action === "confirmed" && "确认"}
+                          {record.action === "rejected" && "拒绝"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(record.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      {record.fieldName && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {record.fieldName}:
+                          {record.oldValue && (
+                            <span className="line-through ml-1">
+                              {record.oldValue}
+                            </span>
+                          )}
+                          {record.newValue && (
+                            <span className="ml-1 text-foreground font-medium">
+                              {record.newValue}
+                            </span>
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">
+                暂无修改历史
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </DashboardLayout>
   );
