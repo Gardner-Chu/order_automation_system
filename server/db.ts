@@ -317,23 +317,34 @@ export async function getActiveEmailConfigs() {
 /**
  * 创建或更新邮箱配置
  */
-export async function upsertEmailConfig(configData: InsertEmailConfig) {
+export async function getEmailConfig() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get email config: database not available");
+    return undefined;
+  }
+
+  const result = await db.select().from(emailConfig).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function upsertEmailConfig(config: InsertEmailConfig): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const existing = await db
     .select()
     .from(emailConfig)
-    .where(eq(emailConfig.configName, configData.configName))
+    .where(eq(emailConfig.configName, config.configName))
     .limit(1);
 
   if (existing.length > 0) {
     await db
       .update(emailConfig)
-      .set(configData)
-      .where(eq(emailConfig.configName, configData.configName));
+      .set(config)
+      .where(eq(emailConfig.configName, config.configName));
   } else {
-    await db.insert(emailConfig).values(configData);
+    await db.insert(emailConfig).values(config);
   }
 }
 

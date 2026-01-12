@@ -141,6 +141,33 @@ export const appRouter = router({
       }),
   }),
 
+  // 邮箱配置管理
+  emailConfig: router({
+    get: protectedProcedure.query(async () => {
+      const { getEmailConfig } = await import("./db");
+      return getEmailConfig();
+    }),
+    upsert: protectedProcedure
+      .input(
+        z.object({
+          configName: z.string(),
+          imapHost: z.string(),
+          imapPort: z.number(),
+          imapUser: z.string(),
+          imapPassword: z.string(),
+          useSsl: z.number(),
+          folderName: z.string(),
+          fieldMapping: z.string(),
+          isActive: z.number(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { upsertEmailConfig } = await import("./db");
+        await upsertEmailConfig(input);
+        return { success: true };
+      }),
+  }),
+
   // 测试数据生成
   seed: router({
     all: protectedProcedure.mutation(async () => {

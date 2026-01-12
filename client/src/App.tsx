@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import ProcessingLogs from "./pages/ProcessingLogs";
+import Settings from "./pages/Settings";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path={"/orders"} component={Orders} />
       <Route path={"/orders/:id"} component={OrderDetail} />
       <Route path={"/logs"} component={ProcessingLogs} />
+      <Route path={"/settings"} component={Settings} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
