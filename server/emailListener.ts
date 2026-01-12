@@ -130,7 +130,6 @@ export async function processEmailAttachment(params: {
   attachmentName: string;
   attachmentType: "excel" | "image" | "pdf" | "other";
   attachmentContent: string; // Excel数据或图片URL
-  fieldMapping?: Record<string, string[]>;
 }): Promise<{ success: boolean; orderId?: number; error?: string }> {
   const {
     emailId,
@@ -139,7 +138,6 @@ export async function processEmailAttachment(params: {
     attachmentName,
     attachmentType,
     attachmentContent,
-    fieldMapping,
   } = params;
 
   // 创建处理日志
@@ -156,9 +154,9 @@ export async function processEmailAttachment(params: {
     // 根据附件类型选择识别方法
     let recognizedOrder;
     if (attachmentType === "excel") {
-      recognizedOrder = await recognizeExcelOrder(attachmentContent, fieldMapping);
+      recognizedOrder = await recognizeExcelOrder(attachmentContent);
     } else if (attachmentType === "image") {
-      recognizedOrder = await recognizeImageOrder(attachmentContent, fieldMapping);
+      recognizedOrder = await recognizeImageOrder(attachmentContent);
     } else {
       throw new Error(`Unsupported attachment type: ${attachmentType}`);
     }

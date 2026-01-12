@@ -26,29 +26,27 @@ export interface RecognizedOrder {
 
 /**
  * 识别Excel表格中的订单信息
+ * AI自主理解订单格式，无需预配置字段映射
  */
 export async function recognizeExcelOrder(
-  excelData: string,
-  fieldMapping?: Record<string, string[]>
+  excelData: string
 ): Promise<RecognizedOrder> {
-  const systemPrompt = `你是一个专业的订单数据提取助手。你的任务是从Excel表格数据中提取订单信息。
+  const systemPrompt = `你是一个专业的订单数据提取AI Agent。你的任务是智能分析Excel表格数据，自主理解并提取订单信息。
 
-请提取以下字段：
-- orderNumber: 订单号
-- customerName: 客户名称
-- customerEmail: 客户邮箱
-- orderDate: 订单日期（ISO 8601格式）
-- deliveryDate: 交期（ISO 8601格式）
+你需要智能识别并提取以下字段（不限于这些名称，请根据语义理解）：
+- orderNumber: 订单号/订单编号/Order Number/PO Number
+- customerName: 客户名称/公司名称/Customer/客户
+- customerEmail: 客户邮箱/Email/联系邮箱
+- orderDate: 订单日期/下单日期/Date（转换为ISO 8601格式）
+- deliveryDate: 交期/交货日期/Delivery Date/Due Date（转换为ISO 8601格式）
 - items: 订单项目数组，每个项目包含：
-  - productCode: 产品编码
-  - quantity: 数量（整数）
-  - specification: 规格
-  - unitPrice: 单价（分，整数）
-  - totalPrice: 总价（分，整数）
+  - productCode: 产品编码/SKU/货号/Product Code
+  - quantity: 数量/Qty/Quantity/订购数量（整数）
+  - specification: 规格/型号/Spec/Specification
+  - unitPrice: 单价/Unit Price（转换为分，整数）
+  - totalPrice: 总价/Total/Amount（转换为分，整数）
 
-${fieldMapping ? `\n字段映射规则：\n${JSON.stringify(fieldMapping, null, 2)}\n` : ""}
-
-请返回JSON格式的结果，并评估识别的置信度（0-100）。`;
+请根据表格内容智能匹配字段，并评估识别的置信度（0-100）。`;
 
   const userPrompt = `请从以下Excel数据中提取订单信息：
 
@@ -137,29 +135,27 @@ ${excelData}
 
 /**
  * 识别图片中的订单信息
+ * AI自主理解订单格式，无需预配置字段映射
  */
 export async function recognizeImageOrder(
-  imageUrl: string,
-  fieldMapping?: Record<string, string[]>
+  imageUrl: string
 ): Promise<RecognizedOrder> {
-  const systemPrompt = `你是一个专业的订单数据提取助手。你的任务是从图片中识别并提取订单信息。
+  const systemPrompt = `你是一个专业的订单数据提取AI Agent。你的任务是智能分析图片中的订单信息，自主理解并提取关键字段。
 
-请提取以下字段：
-- orderNumber: 订单号
-- customerName: 客户名称
-- customerEmail: 客户邮箱
-- orderDate: 订单日期（ISO 8601格式）
-- deliveryDate: 交期（ISO 8601格式）
+你需要智能识别并提取以下字段（不限于这些名称，请根据语义理解）：
+- orderNumber: 订单号/订单编号/Order Number/PO Number
+- customerName: 客户名称/公司名称/Customer/客户
+- customerEmail: 客户邮箱/Email/联系邮箱
+- orderDate: 订单日期/下单日期/Date（转换为ISO 8601格式）
+- deliveryDate: 交期/交货日期/Delivery Date/Due Date（转换为ISO 8601格式）
 - items: 订单项目数组，每个项目包含：
-  - productCode: 产品编码
-  - quantity: 数量（整数）
-  - specification: 规格
-  - unitPrice: 单价（分，整数）
-  - totalPrice: 总价（分，整数）
+  - productCode: 产品编码/SKU/货号/Product Code
+  - quantity: 数量/Qty/Quantity/订购数量（整数）
+  - specification: 规格/型号/Spec/Specification
+  - unitPrice: 单价/Unit Price（转换为分，整数）
+  - totalPrice: 总价/Total/Amount（转换为分，整数）
 
-${fieldMapping ? `\n字段映射规则：\n${JSON.stringify(fieldMapping, null, 2)}\n` : ""}
-
-请返回JSON格式的结果，并评估识别的置信度（0-100）。`;
+请根据图片内容智能匹配字段，并评估识别的置信度（0-100）。`;
 
   const userPrompt = `请从图片中提取订单信息。
 

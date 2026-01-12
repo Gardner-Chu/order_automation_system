@@ -30,17 +30,7 @@ export default function Settings() {
     imapPassword: "",
     useSsl: true,
     folderName: "INBOX",
-    fieldMapping: JSON.stringify(
-      {
-        productCode: ["产品编码", "Product Code", "SKU", "货号"],
-        quantity: ["数量", "Qty", "Quantity", "订购数量"],
-        specification: ["规格", "Spec", "Specification", "型号"],
-        deliveryDate: ["交期", "Delivery Date", "Due Date", "交货日期"],
-        customerName: ["客户", "Customer", "客户名称", "公司名称"],
-      },
-      null,
-      2
-    ),
+    confidenceThreshold: 70,
     isActive: false,
   });
 
@@ -54,19 +44,7 @@ export default function Settings() {
         imapPassword: config.imapPassword || "",
         useSsl: config.useSsl === 1,
         folderName: config.folderName || "INBOX",
-        fieldMapping: config.fieldMapping
-          ? JSON.stringify(JSON.parse(config.fieldMapping), null, 2)
-          : JSON.stringify(
-              {
-                productCode: ["产品编码", "Product Code", "SKU", "货号"],
-                quantity: ["数量", "Qty", "Quantity", "订购数量"],
-                specification: ["规格", "Spec", "Specification", "型号"],
-                deliveryDate: ["交期", "Delivery Date", "Due Date", "交货日期"],
-                customerName: ["客户", "Customer", "客户名称", "公司名称"],
-              },
-              null,
-              2
-            ),
+        confidenceThreshold: 70,
         isActive: config.isActive === 1,
       });
     }
@@ -74,14 +52,6 @@ export default function Settings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // 验证字段映射JSON格式
-    try {
-      JSON.parse(formData.fieldMapping);
-    } catch (error) {
-      toast.error("字段映射格式错误，请检查JSON格式");
-      return;
-    }
 
     await updateMutation.mutateAsync({
       configName: formData.configName,
@@ -91,7 +61,7 @@ export default function Settings() {
       imapPassword: formData.imapPassword,
       useSsl: formData.useSsl ? 1 : 0,
       folderName: formData.folderName,
-      fieldMapping: formData.fieldMapping,
+      fieldMapping: "", // 不再需要字段映射
       isActive: formData.isActive ? 1 : 0,
     });
   };
@@ -250,42 +220,41 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* 字段映射规则 */}
+          {/* AI配置 */}
           <Card>
             <CardHeader>
-              <CardTitle>字段映射规则</CardTitle>
+              <CardTitle>AI识别配置</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fieldMapping">映射规则（JSON格式）</Label>
-                <Textarea
-                  id="fieldMapping"
-                  value={formData.fieldMapping}
+                <Label htmlFor="confidenceThreshold">
+                  置信度阈值（{formData.confidenceThreshold}%）
+                </Label>
+                <Input
+                  id="confidenceThreshold"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={formData.confidenceThreshold}
                   onChange={(e) =>
-                    setFormData({ ...formData, fieldMapping: e.target.value })
+                    setFormData({
+                      ...formData,
+                      confidenceThreshold: parseInt(e.target.value),
+                    })
                   }
-                  rows={15}
-                  className="font-mono text-sm"
-                  placeholder={`{
-  "productCode": ["产品编码", "Product Code"],
-  "quantity": ["数量", "Qty"]
-}`}
+                  className="w-full"
                 />
                 <p className="text-sm text-muted-foreground">
-                  配置AI识别时的字段别名，支持多个别名。系统会尝试匹配这些别名来识别订单信息。
+                  当AI识别置信度低于此阈值时，订单将被标记为“异常”状态，需要人工审核。
                 </p>
               </div>
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">
-                  字段映射说明
+              <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                <h4 className="text-sm font-medium text-green-900 mb-2">
+                  🤖 AI Agent自主识别
                 </h4>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• productCode: 产品编码/SKU</li>
-                  <li>• quantity: 订购数量</li>
-                  <li>• specification: 产品规格/型号</li>
-                  <li>• deliveryDate: 交货日期/交期</li>
-                  <li>• customerName: 客户名称/公司名称</li>
-                </ul>
+                <p className="text-sm text-green-800">
+                  系统使用先进AI技术自主理解订单格式，无需预先配置字段映射规则。AI会智能识别以下字段：订单号、客户名称、产品编码、数量、规格、交期等，并自动适应不同客户的订单格式。
+                </p>
               </div>
             </CardContent>
           </Card>
