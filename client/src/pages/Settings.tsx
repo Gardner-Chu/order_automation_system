@@ -13,9 +13,11 @@ import { toast } from "sonner";
 export default function Settings() {
   const { data: config, isLoading, refetch } = trpc.emailConfig.get.useQuery();
   const updateMutation = trpc.emailConfig.upsert.useMutation({
-    onSuccess: () => {
-      toast.success("配置已保存");
-      refetch();
+    onSuccess: (data) => {
+      // 显示成功消息，包含服务重启信息
+      toast.success(data.message || "配置已保存");
+      // 不调用refetch()，避免表单重置
+      // 用户可以手动点击刷新按钮来重新加载配置
     },
     onError: () => {
       toast.error("保存失败");
