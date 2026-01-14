@@ -87,3 +87,5 @@
 
 ## Bug修复 - Settings页面API错误
 - [x] 修夏Settings页面API Mutation和Query返回HTML的错误
+## Bug修复 - Settings页面持续 API错误
+- [x] 诊断并修夏Settings页面持续出现的API Mutation错误

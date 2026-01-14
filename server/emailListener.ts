@@ -123,14 +123,24 @@ async function processEmails() {
                 password: config.imapPassword,
                 tls: config.useSsl === 1,
                 authTimeout: 10000,
+                tlsOptions: {
+                  rejectUnauthorized: false, // 允许自签名证书
+                },
               },
             });
             
-            // 添加错误事件监听器，防止未捕获的错误
+            // 立即添加错误事件监听器，防止未捕获的错误
             if (connection && connection.imap) {
               connection.imap.on('error', (err: Error) => {
-                console.error('[EmailListener] IMAP connection error:', err);
+                console.error('[EmailListener] IMAP connection error (caught):', err);
               });
+              // 也监听底层socket错误
+              const imapAny = connection.imap as any;
+              if (imapAny._sock) {
+                imapAny._sock.on('error', (err: Error) => {
+                  console.error('[EmailListener] IMAP socket error (caught):', err);
+                });
+              }
             }
             
             break; // 连接成功，退出重试循环
@@ -450,14 +460,24 @@ export async function testImapConnection(params: {
         password: params.imapPassword,
         tls: params.useSsl,
         authTimeout: 10000,
+        tlsOptions: {
+          rejectUnauthorized: false, // 允许自签名证书
+        },
       },
     });
     
-    // 添加错误事件监听器，防止未捕获的错误
+    // 立即添加错误事件监听器，防止未捕获的错误
     if (connection && connection.imap) {
       connection.imap.on('error', (err: Error) => {
-        console.error('[EmailListener] IMAP test connection error:', err);
+        console.error('[EmailListener] IMAP test connection error (caught):', err);
       });
+      // 也监听底层socket错误
+      const imapAny = connection.imap as any;
+      if (imapAny._sock) {
+        imapAny._sock.on('error', (err: Error) => {
+          console.error('[EmailListener] IMAP test socket error (caught):', err);
+        });
+      }
     }
 
     // 尝试打开收件箱
