@@ -66,8 +66,32 @@ export default function Settings() {
     });
   };
 
-  const handleTestConnection = () => {
-    toast.info("连接测试功能即将推出");
+  const testConnectionMutation = trpc.emailConfig.testConnection.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(`测试失败: ${error.message}`);
+    },
+  });
+
+  const handleTestConnection = async () => {
+    if (!formData.imapHost || !formData.imapUser || !formData.imapPassword) {
+      toast.error("请先填写IMAP服务器信息");
+      return;
+    }
+
+    await testConnectionMutation.mutateAsync({
+      imapHost: formData.imapHost,
+      imapPort: formData.imapPort,
+      imapUser: formData.imapUser,
+      imapPassword: formData.imapPassword,
+      useSsl: formData.useSsl,
+    });
   };
 
   if (isLoading) {
@@ -90,10 +114,21 @@ export default function Settings() {
               配置IMAP邮箱连接和字段映射规则
             </p>
           </div>
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            刷新
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTestConnection}
+              disabled={testConnectionMutation.isPending}
+            >
+              <TestTube className="h-4 w-4 mr-2" />
+              {testConnectionMutation.isPending ? "测试中..." : "测试连接"}
+            </Button>
+            <Button variant="outline" onClick={() => refetch()}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
+            </Button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

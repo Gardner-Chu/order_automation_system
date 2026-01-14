@@ -131,8 +131,8 @@ export const appRouter = router({
           emailFrom: z.string(),
           attachmentName: z.string(),
           attachmentType: z.enum(["excel", "image", "pdf", "other"]),
-          attachmentContent: z.string(),
-          fieldMapping: z.record(z.string(), z.array(z.string())).optional(),
+          attachmentUrl: z.string(),
+          attachmentContent: z.string(), // base64 encoded
         })
       )
       .mutation(async ({ input }) => {
@@ -164,7 +164,27 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const { upsertEmailConfig } = await import("./db");
         await upsertEmailConfig(input);
-        return { success: true };
+        
+        // 配置更新后重启邮件监听服务
+        const { restartEmailListener } = await import("./emailListener");
+        restartEmailListener(30);
+        
+        return { success: true, message: "配置已保存，邮件监听服务已重启" };
+      }),
+    
+    testConnection: protectedProcedure
+      .input(
+        z.object({
+          imapHost: z.string(),
+          imapPort: z.number(),
+          imapUser: z.string(),
+          imapPassword: z.string(),
+          useSsl: z.boolean(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { testImapConnection } = await import("./emailListener");
+        return testImapConnection(input);
       }),
   }),
 
