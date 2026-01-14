@@ -125,6 +125,14 @@ async function processEmails() {
                 authTimeout: 10000,
               },
             });
+            
+            // 添加错误事件监听器，防止未捕获的错误
+            if (connection && connection.imap) {
+              connection.imap.on('error', (err: Error) => {
+                console.error('[EmailListener] IMAP connection error:', err);
+              });
+            }
+            
             break; // 连接成功，退出重试循环
           } catch (error) {
             lastError = error as Error;
@@ -444,6 +452,13 @@ export async function testImapConnection(params: {
         authTimeout: 10000,
       },
     });
+    
+    // 添加错误事件监听器，防止未捕获的错误
+    if (connection && connection.imap) {
+      connection.imap.on('error', (err: Error) => {
+        console.error('[EmailListener] IMAP test connection error:', err);
+      });
+    }
 
     // 尝试打开收件箱
     await connection.openBox("INBOX");

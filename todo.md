@@ -84,3 +84,6 @@
 - [x] 添加授权码获取说明和链接
 - [x] 优化IMAP连接失败的错误提示
 - [x] 添加配置帮助文档链接
+
+## Bug修复 - Settings页面API错误
+- [x] 修夏Settings页面API Mutation和Query返回HTML的错误
