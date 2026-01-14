@@ -182,9 +182,21 @@ async function processEmails() {
           }
         }
 
-        // 关闭连接
+        // 关闭连接并移除所有事件监听器
         if (connection) {
-          connection.end();
+          try {
+            // 移除错误监听器
+            if (connection.imap) {
+              connection.imap.removeAllListeners('error');
+              const imapAny = connection.imap as any;
+              if (imapAny._sock) {
+                imapAny._sock.removeAllListeners('error');
+              }
+            }
+            connection.end();
+          } catch (closeError) {
+            console.error('[EmailListener] Error closing connection:', closeError);
+          }
         }
 
         // 更新最后同步时间
@@ -197,9 +209,17 @@ async function processEmails() {
         listenerStatus.errorCount++;
         listenerStatus.lastError = error instanceof Error ? error.message : String(error);
         
-        // 尝试关闭连接
+        // 尝试关闭连接并移除事件监听器
         if (connection) {
           try {
+            // 移除错误监听器
+            if (connection.imap) {
+              connection.imap.removeAllListeners('error');
+              const imapAny = connection.imap as any;
+              if (imapAny._sock) {
+                imapAny._sock.removeAllListeners('error');
+              }
+            }
             connection.end();
           } catch (closeError) {
             console.error(`[EmailListener] Error closing connection:`, closeError);
@@ -483,7 +503,14 @@ export async function testImapConnection(params: {
     // 尝试打开收件箱
     await connection.openBox("INBOX");
 
-    // 关闭连接
+    // 关闭连接并移除事件监听器
+    if (connection.imap) {
+      connection.imap.removeAllListeners('error');
+      const imapAny = connection.imap as any;
+      if (imapAny._sock) {
+        imapAny._sock.removeAllListeners('error');
+      }
+    }
     connection.end();
 
     console.log(`[EmailListener] IMAP connection test successful`);

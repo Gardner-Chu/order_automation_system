@@ -89,3 +89,7 @@
 - [x] 修夏Settings页面API Mutation和Query返回HTML的错误
 ## Bug修复 - Settings页面持续 API错误
 - [x] 诊断并修夏Settings页面持续出现的API Mutation错误
+
+## Bug修复 - 服务器持续崩溃
+- [x] 添加process级别的全局错误处理器防止服务器崩溃
+- [x] 优化IMAP连接管理，避免连接泄漏

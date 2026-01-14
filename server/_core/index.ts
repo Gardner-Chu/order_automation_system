@@ -1,4 +1,3 @@
-import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
@@ -8,6 +7,17 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startEmailListener } from "../emailListener";
+
+// 全局错误处理器，防止服务器因未捕获的异常而崩溃
+process.on('uncaughtException', (error: Error) => {
+  console.error('[Server] Uncaught Exception:', error);
+  // 不退出进程，让服务器继续运行
+});
+
+process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+  console.error('[Server] Unhandled Rejection at:', promise, 'reason:', reason);
+  // 不退出进程，让服务器继续运行
+});
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -50,21 +60,13 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
-
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
+  const port = await findAvailablePort();
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-    
-    // 启动邮件监听服务
-    console.log("[EmailListener] Initializing email listener service...");
-    startEmailListener(30); // 每30秒检查一次新邮件
+    console.log(`[${new Date().toLocaleTimeString()}] Server running on http://localhost:${port}/`);
   });
+  
+  // 启动邮件监听服务
+  startEmailListener();
 }
 
 startServer().catch(console.error);
