@@ -461,9 +461,24 @@ export async function testImapConnection(params: {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[EmailListener] IMAP connection test failed:", error);
 
+    // 根据错误类型提供更友好的提示
+    let friendlyMessage = `IMAP连接失败: ${errorMessage}`;
+    
+    if (errorMessage.includes("LOGIN") || errorMessage.includes("password") || errorMessage.includes("authentication")) {
+      friendlyMessage = "认证失败：用户名或密码错误。\n\n⚠️ 请确认：\n1. 是否使用了IMAP授权码（而不是邮箱密码）\n2. 是否在邮箱设置中开启了IMAP服务\n3. 用户名是否为完整邮箱地址";
+    } else if (errorMessage.includes("ENOTFOUND") || errorMessage.includes("getaddrinfo")) {
+      friendlyMessage = "连接失败：无法解析服务器地址。\n\n请检查IMAP服务器地址是否正确。";
+    } else if (errorMessage.includes("ETIMEDOUT") || errorMessage.includes("timeout")) {
+      friendlyMessage = "连接超时：无法连接到服务器。\n\n请检查：\n1. 网络连接是否正常\n2. 端口号是否正确（通常为993）\n3. 防火墙是否阻止了连接";
+    } else if (errorMessage.includes("ECONNREFUSED")) {
+      friendlyMessage = "连接被拒绝：服务器拒绝连接。\n\n请检查端口号是否正确，或服务器是否开启IMAP服务。";
+    } else if (errorMessage.includes("TLS") || errorMessage.includes("SSL")) {
+      friendlyMessage = "SSL/TLS连接失败。\n\n请尝试关闭\"使用SSL加密连接\"选项，或使用非SSL端口（通常为143）。";
+    }
+
     return {
       success: false,
-      message: `IMAP连接失败: ${errorMessage}`,
+      message: friendlyMessage,
     };
   }
 }

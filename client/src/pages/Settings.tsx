@@ -181,8 +181,35 @@ export default function Settings() {
           <Card>
             <CardHeader>
               <CardTitle>IMAP服务器配置</CardTitle>
+              <p className="text-sm text-muted-foreground mt-2">
+                ⚠️ <strong>重要提示：</strong>大多数邮箱需要使用<strong>授权码</strong>而不是邮箱密码来登录IMAP。
+                <br />
+                • <strong>163邮箱</strong>：登录网页版 → 设置 → POP3/SMTP/IMAP → 开启IMAP服务 → 获取授权码
+                <br />
+                • <strong>QQ邮箱</strong>：设置 → 账户 → POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务 → 开启IMAP → 生成授权码
+                <br />
+                • <strong>Gmail</strong>: Settings → Forwarding and POP/IMAP → Enable IMAP + App Password
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* 常见配置示例 */}
+              <div className="bg-muted/50 p-4 rounded-lg space-y-2 text-sm">
+                <p className="font-semibold">常见邮箱配置示例：</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <p className="font-medium">163邮箱</p>
+                    <p className="text-muted-foreground">imap.163.com:993</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">QQ邮箱</p>
+                    <p className="text-muted-foreground">imap.qq.com:993</p>
+                  </div>
+                  <div>
+                    <p className="font-medium">腾讯企业邮</p>
+                    <p className="text-muted-foreground">imap.exmail.qq.com:993</p>
+                  </div>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="imapHost">IMAP服务器地址</Label>
@@ -222,7 +249,9 @@ export default function Settings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="imapPassword">密码</Label>
+                  <Label htmlFor="imapPassword">
+                    密码 <span className="text-destructive">(请使用授权码，不是邮箱密码)</span>
+                  </Label>
                   <Input
                     id="imapPassword"
                     type="password"
@@ -230,8 +259,11 @@ export default function Settings() {
                     onChange={(e) =>
                       setFormData({ ...formData, imapPassword: e.target.value })
                     }
-                    placeholder="••••••••"
+                    placeholder="请输入IMAP授权码"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    注意：大多数邮箱需要在邮箱设置中开启IMAP服务并生成授权码
+                  </p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
