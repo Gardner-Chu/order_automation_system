@@ -75,3 +75,6 @@
 
 ## Bug修复 - 配置保存问题
 - [x] 修复邮箱配置页面保存后表单重置为默认值的问题
+
+## Bug修复 - API返回HTML错误
+- [x] 修夏Settings页面API查询返回HTML而非JSON的错误

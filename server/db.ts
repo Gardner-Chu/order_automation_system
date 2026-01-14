@@ -325,11 +325,11 @@ export async function getEmailConfig() {
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot get email config: database not available");
-    return undefined;
+    return null;
   }
 
   const result = await db.select().from(emailConfig).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return result.length > 0 ? result[0] : null;
 }
 
 export async function upsertEmailConfig(config: InsertEmailConfig): Promise<void> {
